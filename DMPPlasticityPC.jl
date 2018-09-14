@@ -142,17 +142,36 @@ DeltaT=15; # Interval between trials in seconds
 
 # Place cells 
 N=493; # number of place cells 
-Xplacecell=sunflower(N,R,2)[:,1]; # absciss place cells  
-Yplacecell=sunflower(N,R,2)[:,2]; # y place cells 
+#Xplacecell=sunflower(N,R,2)[:,1]; # absciss place cells  
+#Yplacecell=sunflower(N,R,2)[:,2]; # y place cells 
 
 
 # Place cell : method used by Blake richards 
 # initialize the centres of the place cells by random unifrom sampling across the pool
 arguments= rand(1,N)*2*pi;
 radii= sqrt.(rand(1,N))*R;
+
+
+
+
+
+# sort them in radius 
+radii=sort(radii,dims=2,rev=true); # sort the radius in increasing orders 
+#ordering=[find(x->radiibis[k]==x,radii)[1] for k in 1:N]; # order of indexes 
+
+
 global  centres
 centres= [cos.(arguments).*radii; sin.(arguments).*radii]; 
 
+xp=40;
+yp=40; # in SMT change everyday but in here we need define this now to order the place cells from their distance to platform
+
+centretoplatform=centres.-[xp, yp];
+
+distancestoplatform=[sqrt(sum(centretoplatform[:,k].^2)) for k=1:N];
+distancestoplatformordered=sort(distancestoplatform); # sort them from the smaller to bigger 
+ordering=[findall(x->distancestoplatformordered[k]==x,distancestoplatform)[1] for k in 1:N]; # find the corresponding indexes 
+centres=centres[:,ordering]; # reorder the PC according to their distance to platform 
 
 
 
@@ -194,7 +213,7 @@ momentum=1.0;
 actorLR=0.1; # actor learning rate
 criticLR=0.01; # critic learning rate
 centerLR=0.8; # learning rate for the centers of place cells
-widthLR=0.01; # learning rate for the width of the activity profile 
+widthLR=0.8; # learning rate for the width of the activity profile 
 
 
 
@@ -436,7 +455,17 @@ currentexperiment=[];
                     centres=centres+centerLR.*err.*transpose(acttest*dir);
 
                     # learning on the width of the activity profile 
-                    widths=widths-sign(err).*widthLR.*acttest;
+                    #widths=widths-err.*widthLR.*actplacecell;
+                    #println(-err.*widthLR.*acttest)
+                    # prevent them from becoming negative 
+                    #widths[widths.<=0]=minimum(widths[widths.>0])*ones(length(widths[widths.<=0])); 
+
+                    # New trial for width evolution : width proportional to the distance to max of value funtion :
+
+                    #widths=1./[minimum(criticweights[k],0.001; # lets try that 
+
+                     #widths[widths.<=0]=minimum(widths[widths.>0])*ones(length(widths[widths.<=0])); 
+
 
 
                      ####### ####### ####### Updating search preference  ####### ####### #######
@@ -490,6 +519,6 @@ using JLD2
 using FileIO
 
 
-save("/Users/pmxct2/Documents/FosterDayanMorris/Sublime/experiment.jld2", "parameters",parameters,"features",featuresexperiment,"data",experiment);
+save("/Users/pmxct2/Documents/FosterDayanMorris/Sublime/experiment2.jld2", "parameters",parameters,"features",featuresexperiment,"data",experiment);
 
 

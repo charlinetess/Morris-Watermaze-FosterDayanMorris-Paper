@@ -2,7 +2,7 @@
 
 using JLD2
 using FileIO
-rats=load("/Users/pmxct2/Documents/FosterDayanMorris/Sublime/experiment.jld2");
+rats=load("/Users/pmxct2/Documents/FosterDayanMorris/Sublime/experiment2.jld2");
 
 
 
@@ -76,7 +76,7 @@ plot(vcat(data[indexrat][indexday].day[indextrial4].PCcentres[1,k], data[indexra
 end
 
 # plot the width of a certain number as a circle to check evolution of the widths 
-for k=5:10
+for k=20:20
 	for i=1:4
 
 plot(data[indexrat][indexday].day[indextrials[i]].PCcentres[1,k].+cos.(argument).*data[indexrat][indexday].day[indextrials[i]].PCwidths[k], data[indexrat][indexday].day[indextrials[i]].PCcentres[2,k].+sin.(argument).*data[indexrat][indexday].day[indextrials[i]].PCwidths[k],linestyle="-",color=colors[i])
@@ -88,9 +88,13 @@ end
 
 suptitle("Place cells widths evolution ")
 
-#gcf() # Needed for IJulia to plot inline
+gcf() # Needed for IJulia to plot inline
 
 show()
+
+
+
+
 
 
 

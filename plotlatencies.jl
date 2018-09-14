@@ -1,12 +1,12 @@
 # Load the data 
 
 using JLD: load
-rats=load("/Users/pmxct2/Documents/FosterDayanMorris/experiment.jld")
+rats=load("/Users/pmxct2/Documents/FosterDayanMorris/Sublime/experiment.jld")
 rats = rats["rats"] 
 
 # Define number of rats, number of days and numbers of trials per day
 numberofdays=9;
-numberofrats=60;
+numberofrats=1;
 numberoftrials=4; 
 
 # Computing the mean of all latencies 

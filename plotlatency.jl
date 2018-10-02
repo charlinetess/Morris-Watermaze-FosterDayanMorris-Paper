@@ -1,7 +1,32 @@
-# chose rat 
-indexrat=59;
+# load data 
+using JLD2
+using FileIO
+rats=load("/Users/pmxct2/Documents/FosterDayanMorris/Sublime/experiment22.jld2");
 
-latencierat=[rats.experiment[2].day[div(k+numberoftrials-1,numberoftrials)].trial[rem(numberoftrials-1+k,numberoftrials)+1].Latency for k in 1:numberoftrials*numberofdays ]
+
+
+
+parameters=rats["parameters"];
+featuresexperiment=rats["features"];
+
+data=rats["data"];
+
+#data[indexrat][indexday][indextrial] contains fields :  trajectory, latency, searchpreference,actionmap,valuemap,TDerror,PCcentres 
+
+
+r=5; # platform radius
+R=100
+
+
+# chose rat 
+indexrat=4;
+
+
+
+
+
+latencierat=[data[indexrat][div(k+numberoftrials-1,numberoftrials)].day[rem(numberoftrials-1+k,numberoftrials)+1].latency for k in 1:numberoftrials*numberofdays ]
+
 using PyPlot
 ioff()
 fig = figure("Test plot latencies",figsize=(10,10))
@@ -12,7 +37,8 @@ ylabel("latencies")
 
 
 for k=1:numberofdays
-plot(k*numberoftrials.+(1:numberoftrials), [rats.experiment[indexrat].day[k].trial[i].Latency for i in 1:numberoftrials ], marker="o",linestyle="-",color="m")
+plot(k*numberoftrials.+(1:numberoftrials), [data[indexrat][k].day[i].latency for i in 1:numberoftrials ], marker="o",linestyle="-",color="m")
 
 end 
 show()
+

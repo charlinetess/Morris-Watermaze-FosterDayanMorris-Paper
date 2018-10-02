@@ -1,16 +1,22 @@
-# Load the data 
+# load data 
+using JLD2
+using FileIO
+rats=load("/Users/pmxct2/Documents/FosterDayanMorris/Sublime/experimentnew22.jld2");
 
-using JLD: load
-rats=load("/Users/pmxct2/Documents/FosterDayanMorris/Sublime/experiment.jld");
-rats = rats["rats"];
 
-#Declare a figure object 
-using PyPlot
-ioff()
-fig = figure("Test plot Trajectory",figsize=(16,4))
+
+
+parameters=rats["parameters"]
+featuresexperiment=rats["features"]
+
+data=rats["data"]
+
+#data[indexrat][indexday][indextrial] contains fields :  trajectory, latency, searchpreference,actionmap,valuemap,TDerror,PCcentres 
 
 
 r=5; # platform radius
+R=100
+
 
 
 # chose rat 
@@ -19,9 +25,9 @@ indexrat=1;
 indexday=1;
 # chose trial
 indextrial1=1;
-indextrial2=7;
-indextrial3=14;
-indextrial4=20;
+indextrial2=410;
+indextrial3=550;
+indextrial4=1000;
 
 
 
@@ -51,16 +57,16 @@ ylabel("Y")
 
 
 # Plot place cells 
-scatter(rats.experiment[indexrat].day[indexday].trial[indextrial1].PlaceCells[1,:],rats.experiment[indexrat].day[indexday].trial[indextrial1].PlaceCells[2,:],s=3)
-
+scatter(data[indexrat][indexday].day[indextrial1].PCcentres[1,:],data[indexrat][indexday].day[indextrial1].PCcentres[2,:],s=3)
 # plot platform
-plot(rats.experiment[indexrat].day[indexday].Platform[1]+xplat,rats.experiment[indexrat].day[indexday].Platform[2] + yplat,color="red")
+plot(data[indexrat][indexday].platformposition[1].+xplat,data[indexrat][indexday].platformposition[2] .+ yplat,color="red")
 
 # Plot circle
 plot(xmaze,ymaze)
 
+
 # Plot trajectory 
-plot(rats.experiment[indexrat].day[indexday].trial[indextrial1].Trajectory[:,1],rats.experiment[indexrat].day[indexday].trial[indextrial1].Trajectory[:,2],"m-", lw=0.5)
+plot(data[indexrat][indexday].day[indextrial1].trajectory[:,1],data[indexrat][indexday].day[indextrial1].trajectory[:,2],"m-", lw=0.5)
 
 
 
@@ -71,13 +77,17 @@ ax2[:set_xlim]([-100,100])
 xlabel("X")
 ylabel("Y")
 
-scatter(rats.experiment[indexrat].day[indexday].trial[indextrial2].PlaceCells[1,:],rats.experiment[indexrat].day[indexday].trial[indextrial2].PlaceCells[2,:],s=3)
-plot(rats.experiment[indexrat].day[indexday].Platform[1]+xplat,rats.experiment[indexrat].day[indexday].Platform[2] + yplat,color="red")
+# Plot place cells 
+scatter(data[indexrat][indexday].day[indextrial2].PCcentres[1,:],data[indexrat][indexday].day[indextrial2].PCcentres[2,:],s=3)
+# plot platform
+plot(data[indexrat][indexday].platformposition[1].+xplat,data[indexrat][indexday].platformposition[2] .+ yplat,color="red")
+
 # Plot circle
 plot(xmaze,ymaze)
 
-plot(rats.experiment[indexrat].day[indexday].trial[indextrial2].Trajectory[:,1],rats.experiment[indexrat].day[indexday].trial[indextrial2].Trajectory[:,2],"m-", lw=0.5)
 
+# Plot trajectory 
+plot(data[indexrat][indexday].day[indextrial2].trajectory[:,1],data[indexrat][indexday].day[indextrial2].trajectory[:,2],"m-", lw=0.5)
 
 
 
@@ -89,16 +99,17 @@ ax3[:set_xlim]([-100,100])
 xlabel("X")
 ylabel("Y")
 
-scatter(rats.experiment[indexrat].day[indexday].trial[indextrial3].PlaceCells[1,:],rats.experiment[indexrat].day[indexday].trial[indextrial3].PlaceCells[2,:],s=3)
-plot(rats.experiment[indexrat].day[indexday].Platform[1]+xplat,rats.experiment[indexrat].day[indexday].Platform[2] + yplat,color="red")
+# Plot place cells 
+scatter(data[indexrat][indexday].day[indextrial3].PCcentres[1,:],data[indexrat][indexday].day[indextrial3].PCcentres[2,:],s=3)
+# plot platform
+plot(data[indexrat][indexday].platformposition[1].+xplat,data[indexrat][indexday].platformposition[2] .+ yplat,color="red")
+
 # Plot circle
 plot(xmaze,ymaze)
 
 
-
-
-plot(rats.experiment[indexrat].day[indexday].trial[indextrial3].Trajectory[:,1],rats.experiment[indexrat].day[indexday].trial[indextrial3].Trajectory[:,2],"m-", lw=0.5)
-
+# Plot trajectory 
+plot(data[indexrat][indexday].day[indextrial3].trajectory[:,1],data[indexrat][indexday].day[indextrial3].trajectory[:,2],"m-", lw=0.5)
 
 
 
@@ -114,15 +125,17 @@ ax4[:set_xlim]([-100,100])
 xlabel("X")
 ylabel("Y")
 
-scatter(rats.experiment[indexrat].day[indexday].trial[indextrial4].PlaceCells[1,:],rats.experiment[indexrat].day[indexday].trial[indextrial4].PlaceCells[2,:],s=3)
-plot(rats.experiment[indexrat].day[indexday].Platform[1]+xplat,rats.experiment[indexrat].day[indexday].Platform[2] + yplat,color="red")
+# Plot place cells 
+scatter(data[indexrat][indexday].day[indextrial4].PCcentres[1,:],data[indexrat][indexday].day[indextrial4].PCcentres[2,:],s=3)
+# plot platform
+plot(data[indexrat][indexday].platformposition[1].+xplat,data[indexrat][indexday].platformposition[2] .+ yplat,color="red")
+
 # Plot circle
 plot(xmaze,ymaze)
-plot(rats.experiment[indexrat].day[indexday].trial[indextrial4].Trajectory[:,1],rats.experiment[indexrat].day[indexday].trial[indextrial4].Trajectory[:,2],"m-", lw=0.5)
 
 
-
-
+# Plot trajectory 
+plot(data[indexrat][indexday].day[indextrial4].trajectory[:,1],data[indexrat][indexday].day[indextrial4].trajectory[:,2],"m-", lw=0.5)
 
 
 # fig[:canvas][:draw]() # Update the figure
@@ -132,3 +145,5 @@ suptitle("Place cells centres evolution ")
 #gcf() # Needed for IJulia to plot inline
 
 show()
+
+

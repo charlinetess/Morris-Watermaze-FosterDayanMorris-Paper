@@ -2,7 +2,7 @@
 
 using JLD2
 using FileIO
-rats=load("/Users/pmxct2/Documents/FosterDayanMorris/Sublime/experiment2.jld2");
+rats=load("/Users/pmxct2/Documents/FosterDayanMorris/Sublime/experimentweightsconstants.jld2");
 
 
 
@@ -23,9 +23,9 @@ indexrat=1;
 indexday=1;
 # chose trial
 indextrial1=1;
-indextrial2=50;
-indextrial3=120;
-indextrial4=200;
+indextrial2=4;
+indextrial3=7;
+indextrial4=10;
 
 indextrials=[indextrial1 indextrial2 indextrial3 indextrial4];
 
@@ -76,7 +76,7 @@ plot(vcat(data[indexrat][indexday].day[indextrial4].PCcentres[1,k], data[indexra
 end
 
 # plot the width of a certain number as a circle to check evolution of the widths 
-for k=20:20
+for k=1:10:N
 	for i=1:4
 
 plot(data[indexrat][indexday].day[indextrials[i]].PCcentres[1,k].+cos.(argument).*data[indexrat][indexday].day[indextrials[i]].PCwidths[k], data[indexrat][indexday].day[indextrials[i]].PCcentres[2,k].+sin.(argument).*data[indexrat][indexday].day[indextrials[i]].PCwidths[k],linestyle="-",color=colors[i])

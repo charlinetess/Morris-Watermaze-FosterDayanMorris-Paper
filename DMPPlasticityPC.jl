@@ -79,7 +79,7 @@ function  placecells(pos,cent,width)
 #The returned vector, F, must be a N element column vector.
     # calculate place cell activity
 
-F = exp.(-sum((repeat(pos,1,size(cent,2))-cent).^2,dims=1)./(2*transpose(width).^2));
+F = exp.(-sum((repeat(pos,1,size(cent,2))-cent).^2,dims=1)./(2*width.^2));
 Fbis=zeros(length(F),1)
 transpose!(Fbis,F)
 return Fbis
@@ -163,6 +163,7 @@ radii=sort(radii,dims=2,rev=true); # sort the radius in increasing orders
 global  centres
 centres= [cos.(arguments).*radii; sin.(arguments).*radii]; 
 
+global xp, yp
 xp=40;
 yp=40; # in SMT change everyday but in here we need define this now to order the place cells from their distance to platform
 
@@ -181,25 +182,36 @@ Yplacecell=centres[2,:];
 
 σ=0.30*100; # variability of place cell activity, in centimeters
 global widths
-widths=σ*ones(length(centres[1,:]));
+widths=σ*ones(1,length(centres[1,:]));
 
 # Action cells : 
 n=8; # number of action cells 
 
 
 # Potential positions of the platform : 
-Xplatform=[0.3,0,-0.3,0,0.5,-0.5,0.5,-0.5].*R; # in cm
-Yplatform=[0,0.3,0,-0.3,0.5,0.5,-0.5,-0.5].*R;# in cm
+global Xplatform, Yplatform
+Xplatform=[0.4,0,-0.4,0,0.5,-0.5,0.5,-0.5].*R; # in cm
+Yplatform=[0,0.4,0,-0.4,0.5,0.5,-0.5,-0.5].*R;# in cm
 
 # Potential Starting positions of the rat :
 Xstart=[0.95,0,-0.95,0].*R; # East, North, West, South
 Ystart=[0,0.95,0,-0.95].*R;
 
+
+
+
+
+
+
+
+
+
+
 # Define number of rats, number of days and numbers of trials per day
 numberofdays=1;
 numberofrats=1;
-numberoftrials=300;
-
+numberoftrialsWeights=20;
+numberoftrialsPC=20;
 
 times=collect(0:dt:T+dt);
 
@@ -212,8 +224,8 @@ momentum=1.0;
 γ=0.98; # Discount factor.  they dont precise the value  
 actorLR=0.1; # actor learning rate
 criticLR=0.01; # critic learning rate
-centerLR=0.8; # learning rate for the centers of place cells
-widthLR=0.8; # learning rate for the width of the activity profile 
+centerLR=0.1; # learning rate for the centers of place cells
+widthLR=0.1; # learning rate for the width of the activity profile 
 
 
 
@@ -229,7 +241,7 @@ widthLR=0.8; # learning rate for the width of the activity profile
 #
 
 parameters=[momentum,γ,actorLR,criticLR];
-featuresexperiment=[numberofrats, numberofdays, numberoftrials];
+featuresexperiment=[numberofrats, numberofdays, numberoftrialsWeights,numberoftrialsPC];
     
 println("start of experiments")
 experiment=[];
@@ -239,8 +251,43 @@ for indexrat=1:numberofrats
 #currentexperiment=Experiment(); # Creating the experiment 
 
 # Initialisation variables :
+# initialise weights
 criticweights=zeros(N,1);
+
+# try to see if we leave the critic weights constant, the PC will change 
+
+criticweights=ones(N,1)./N;
+
 actorweights=zeros(N,n);    
+
+# Place cell : method used by Blake richards 
+# initialize the centres of the place cells by random unifrom sampling across the pool
+arguments= rand(1,N)*2*pi;
+radii= sqrt.(rand(1,N))*R;
+
+global xp, yp
+xp=Xplatform[indexrat];
+yp=Yplatform[indexrat];
+
+global  centres
+centres= [cos.(arguments).*radii; sin.(arguments).*radii]; 
+
+centretoplatform=centres.-[xp, yp];
+
+distancestoplatform=[sqrt(sum(centretoplatform[:,k].^2)) for k=1:N];
+distancestoplatformordered=sort(distancestoplatform); # sort them from the smaller to bigger 
+ordering=[findall(x->distancestoplatformordered[k]==x,distancestoplatform)[1] for k in 1:N]; # find the corresponding indexes 
+centres=centres[:,ordering]; # reorder the PC according to their distance to platform 
+
+
+
+
+Xplacecell=centres[1,:];
+Yplacecell=centres[2,:];
+
+σ=0.30*100; # variability of place cell activity, in centimeters
+global widths
+widths=σ*ones(1,length(centres[1,:]));
     
         ##########  ##########  ##########  ##########   ########## 
     ##########  ##########  START EXPERIMENT  ##########  ##########  
@@ -249,15 +296,16 @@ actorweights=zeros(N,n);
 # currentexperiment=Experiment(); # Creating the experiment 
 #currentexperiment.PlaceCells=hcat(Xplacecell,Yplacecell); # Store location of place cells 
 currentexperiment=[];
-
+println(indexrat)
     for indexday=1:numberofdays
         # Everyday the location of the platform changes
         # Chose platform :
         #indexplatform=rand(1:8); # take ith platform 
         #xp=Xplatform[indexplatform];
         #yp=Yplatform[indexplatform]; 
-        xp=40;
-        yp=40;
+        global xp, yp
+        xp=Xplatform[indexrat];
+        yp=Yplatform[indexrat];
         
         #currentday=Day(); # creating a day 
         #currentday.Platform=hcat(xp,yp);  
@@ -267,7 +315,11 @@ currentexperiment=[];
             ##########  ##########  ##########  ##########  
         currentday=[];
         
-        for indextrial=1:numberoftrials ##########  
+
+
+
+        # First we evolve the weights to learn the location of the platform (represented by the shape of the value function mostly)
+        for indextrial=1:(numberoftrialsWeights+numberoftrialsPC) ##########  
             
             ## Chose starting position :
             #        
@@ -354,7 +406,9 @@ currentexperiment=[];
                     argdecision=angles[indexaction]; # compute the coreesponding angle 
                     newdir=[cos(argdecision) sin(argdecision)];
                     dir=(newdir./(1.0+momentum).+momentum.*prevdir./(1.0+momentum)); # smooth trajectory to avoid sharp angles
-                    dir=dir./norm(dir); # normalize so we control the exact speed of the rat
+                        if !(norm(dir)==0)
+                            dir=dir./norm(dir); # normalize so we control the exact speed of the rat
+                        end
                     prevdir=dir; # store former direction
                     
                     # other possibilities :
@@ -373,7 +427,7 @@ currentexperiment=[];
                 
                     # We code walls as reflectors :
                         if X^2+Y^2>R^2 # if we are out of the circle 
-                             currentposition = (currentposition./(X^2+Y^2))*(R - 1);
+                             currentposition = (currentposition./sqrt(X^2+Y^2))*(R - 1);
                             ## find the position between former position and current position that is exactly on the circle :
                             ## Create Polynomial with a parameter lambda that represent the absciss along the segment
                             ## search the value of lambda for which we are crossing the circle    
@@ -411,7 +465,7 @@ currentexperiment=[];
                     
                     # If we are now at the very edge of the maze, move us in a little bit :
                         if X^2+Y^2==R^2
-                            currentposition= (currentposition./(X^2+Y^2))*(R - 1);
+                            currentposition= (currentposition./sqrt(X^2+Y^2))*(R - 1);
                         end
                 
                     # compute new activity of pace cells :
@@ -434,6 +488,7 @@ currentexperiment=[];
                 
                     ######### Compute new weights : ########
                     
+                    if in(indextrial,1:numberoftrialsWeights) # we first learn the environment 
                     # Actor weights :
                         if timeout==0
                             G=zeros(8,1); # creating a matrix to select the row to update
@@ -445,27 +500,45 @@ currentexperiment=[];
                     
                     # Critic weights : 
                     criticweights=criticweights+criticLR.*err.*actplacecell;
-                    
+
+                end
+
+                if in(indextrial,numberoftrialsWeights+1:numberoftrialsPC) # we first learn the environment 
+                    # Minimise the square  Error value : 
+                    #centres=centres+centerLR.*err.*(γ.*(repeat(transpose(currentposition),1,size(centres,2))-centres)./widths.^2*Diagonal((exp.(-sum((repeat(transpose(currentposition),1,size(centres,2))-centres).^2,dims=1)./(2*widths.^2))*Diagonal(criticweights[:]))[:])-(repeat(transpose(formerposition),1,size(centres,2))-centres)./widths.^2*Diagonal((exp.(-sum((repeat(transpose(formerposition),1,size(centres,2))-centres).^2,dims=1)./(2*widths.^2))*Diagonal(criticweights[:]))[:]));
+
+                    #widths=widths+widthLR.*err.*(γ.*(sum((repeat(transpose(currentposition),1,size(centres,2))-centres).^2,dims=1)./widths.^3)*Diagonal((exp.(-sum((repeat(transpose(currentposition),1,size(centres,2))-centres).^2,dims=1)./(2*widths.^2))*Diagonal(criticweights[:]))[:])-(sum((repeat(transpose(formerposition),1,size(centres,2))-centres).^2,dims=1)./widths.^3)*Diagonal((exp.(-sum((repeat(transpose(formerposition),1,size(centres,2))-centres).^2,dims=1)./(2*widths.^2))*Diagonal(criticweights[:]))[:]));
+
+
+                    # Miimise MSE 
+                    # update PC center 
+                    centres=centres+centerLR.*err.*(repeat(transpose(currentposition),1,size(centres,2))-centres)./widths.^2*Diagonal((exp.(-sum((repeat(transpose(currentposition),1,size(centres,2))-centres).^2,dims=1)./(2*widths.^2))*Diagonal(criticweights[:]))[:]);
+                    # update PC widths of activity 
+                    widths=widths+widthLR.*err.*(sum((repeat(transpose(currentposition),1,size(centres,2))-centres).^2,dims=1)./widths.^3)*Diagonal((exp.(-sum((repeat(transpose(currentposition),1,size(centres,2))-centres).^2,dims=1)./(2*widths.^2))*Diagonal(criticweights[:]))[:]);
+                    widths[widths.<=0]=minimum(widths[widths.>0])*ones(length(widths[widths.<=0])); 
+    
+
+                    # My own homemade rule : 
                     # update PC centers : 
                     # chose selection threshold
-                    PCthreshold=mean(actplacecell)/2+maximum(actplacecell)/2; # threshold on the activity of the place cells such that only the ones near the current positions are updated.
+                    #PCthreshold=mean(actplacecell)/2+maximum(actplacecell)/2; # threshold on the activity of the place cells such that only the ones near the current positions are updated.
                     # define the selection matrix : 
-                    acttest=actplacecell;# copy the vector of activities
-                    acttest[acttest.<PCthreshold]=0*acttest[acttest.<PCthreshold]; # set to 0 the value which is under the thrshold, those PC wont be updated
-                    centres=centres+centerLR.*err.*transpose(acttest*dir);
-
-                    # learning on the width of the activity profile 
-                    #widths=widths-err.*widthLR.*actplacecell;
-                    #println(-err.*widthLR.*acttest)
-                    # prevent them from becoming negative 
+                    #acttest=actplacecell;# copy the vector of activities
+                    #acttest[acttest.<PCthreshold]=0*acttest[acttest.<PCthreshold]; # set to 0 the value which is under the thrshold, those PC wont be updated
+                    #centres=centres+centerLR.*err.*transpose(acttest*dir);
+##
+                    ### learning on the width of the activity profile 
+                    #widths=widths-err.*widthLR.*transpose(actplacecell);
+                    ###println(-err.*widthLR.*acttest)
+                    ### prevent them from becoming negative 
                     #widths[widths.<=0]=minimum(widths[widths.>0])*ones(length(widths[widths.<=0])); 
-
+#
                     # New trial for width evolution : width proportional to the distance to max of value funtion :
 
                     #widths=1./[minimum(criticweights[k],0.001; # lets try that 
 
                      #widths[widths.<=0]=minimum(widths[widths.>0])*ones(length(widths[widths.<=0])); 
-
+                 end
 
 
                      ####### ####### ####### Updating search preference  ####### ####### #######
@@ -478,6 +551,9 @@ currentexperiment=[];
                 
                 ##################################################            
                 end
+
+
+
 
                 ########## ##########  END TRIAL ########## ##########             
             
@@ -492,6 +568,23 @@ currentexperiment=[];
             currenttrial=(trajectory=hcat(historyX,historyY),latency=t,searchpreference=searchpref,actionmap=actorweights,valuemap=criticweights,TDerror=TDerrors,PCcentres=centres,PCwidths=widths); # Creating the current trial with all its fields
             push!(currentday,currenttrial)
         
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
         ##################################################     
         end 
         ########## ##########  END DAY ########## ##########
@@ -519,6 +612,6 @@ using JLD2
 using FileIO
 
 
-save("/Users/pmxct2/Documents/FosterDayanMorris/Sublime/experiment2.jld2", "parameters",parameters,"features",featuresexperiment,"data",experiment);
+save("/Users/charlinetessereau/Documents/pHdNottingham/FosterDayanMorris/experimenttest.jld2", "parameters",parameters,"features",featuresexperiment,"data",experiment);
 
 
